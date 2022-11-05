@@ -1,10 +1,9 @@
 /*
- * AM wireless mic / morse osc  for PIC12F1612
+ * AM wireless morse osc  for PIC12F1612
  *
- *      JA1YTS:Toshiba Amature Radio Station
  *      JK1MLY:Hidekazu Inaba
  *
- *  (C)2022 JA1YTS,JK1MLY All rights reserved.
+ *  (C)2022 JK1MLY All rights reserved.
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  * 1. Redistributions of source code must retain the above copyright notice,
@@ -45,21 +44,21 @@
 #define _XTAL_FREQ 8000000
 // Pin list
 //          GND     VSS       Pin 8
-#define		Key		RA0     //Pin 7 AN0 DA1 CCP2
-#define		LED		RA1     //Pin 6 AN1 REF
+#define		F_UP	RA0     //Pin 7 AN0 DA1 CCP2
+#define		Key		RA1     //Pin 6 AN1 REF
 #define		Ant		RA2     //Pin 5 AN2     CCP1
-#define		MRST	RA3     //Pin 4 MCLR
-#define		F_UP	RA4     //Pin 3 AN3 OUT
-#define		F_DN	RA5     //Pin 2     IN
+#define		F_DN	RA3     //Pin 4 MCLR
+#define		SPX 	RA4     //Pin 3 AN3 OUT
+#define		SPK 	RA5     //Pin 2     IN
 //          VCC     VDD       Pin 1
 
 void port_init(void) {
 
     // Configure GPIO
     LATA     = 0b00000000;    //Output
-    TRISA    = 0b00110001;    //In(1) /Out(0)
+    TRISA    = 0b00001011;    //In(1) /Out(0)
     ANSELA   = 0b00000000;    //Analog(1)
-    WPUA     = 0b00111001;    //PupOn(1)
+    WPUA     = 0b00001011;    //PupOn(1)
     OPTION_REGbits.nWPUEN = 0;
     ODCONA   = 0b00000000;
     SLRCONA  = 0b00110111;
@@ -93,9 +92,13 @@ void port_init(void) {
 
 void send_dot(void){
     for(uint8_t lp=0; lp<60; lp++){
-        LED = 1;
+        T2CONbits.T2ON = 1;
+        SPK = 1;
+        SPX = 0;
         __delay_us(830);
-        LED = 0;
+        T2CONbits.T2ON = 0;
+        SPK = 0;
+        SPX = 1;
         __delay_us(830);
     }
     __delay_ms(100);
@@ -103,9 +106,13 @@ void send_dot(void){
 
 void send_dash(void){
     for(uint8_t lp=0; lp<180; lp++){
-        LED = 1;
+        T2CONbits.T2ON = 1;
+        SPK = 1;
+        SPX = 0;
         __delay_us(830);
-        LED = 0;
+        T2CONbits.T2ON = 0;
+        SPK = 0;
+        SPX = 1;
         __delay_us(830);
     }
     __delay_ms(100);
@@ -131,14 +138,11 @@ void main(void){
 
     port_init();
 // switch check
-    for(uint8_t lp=0; lp<3; lp++){
+    for(uint8_t lp=0; lp<5; lp++){
         if(Key == 0){
             flag = 1;
             break;
         }
-            LED = 1;
-        __delay_ms(200);
-            LED = 0;
         __delay_ms(200);
     }
 
@@ -148,16 +152,16 @@ void main(void){
 // frequency adjust
     if(F_DN == 0){
         OSCTUNE = 0x3D;
-            LED = 1;
+            SPK = 1;
         __delay_ms(500);
-            LED = 0;
+            SPK = 0;
         __delay_ms(200);
     } else if(F_UP == 0){
         __delay_ms(300);
         OSCTUNE = 0x03;
-            LED = 1;
+            SPK = 1;
         __delay_ms(500);
-            LED = 0;
+            SPK = 0;
         __delay_ms(200);
     } else {
         OSCTUNE = 0x00;
@@ -171,7 +175,6 @@ void main(void){
 
 // tuning
         while(Key == 0){
-            LED = 1;
             if(F_DN == 0){
                 OSCTUNE = 0x3D;
             } else if(F_UP == 0){
@@ -187,7 +190,6 @@ void main(void){
         for(uint8_t lp=0; lp<10; lp++){
             __delay_ms(100);
             if(Key == 0){
-                LED = 0;
                 flag = 0;
                 break;
             }
@@ -201,9 +203,13 @@ void main(void){
     {
         // key down tone
         if (Key == 0) {
-            LED = 1;
+            T2CONbits.T2ON = 1;
+            SPK = 1;
+            SPX = 0;
             __delay_us(830);
-            LED = 0;
+            T2CONbits.T2ON = 0;
+            SPK = 0;
+            SPX = 1;
             __delay_us(830);
         } else {
             __delay_us(830);
